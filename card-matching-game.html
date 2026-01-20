@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เกมจับคู่ไพ่</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #e94560;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        .game-info span {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 500px;
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 100px;
+            height: 140px;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.6s ease;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            animation: matchedAnim 0.5s ease forwards;
+        }
+
+        @keyframes matchedAnim {
+            0% { transform: rotateY(180deg) scale(1); }
+            50% { transform: rotateY(180deg) scale(1.1); }
+            100% { transform: rotateY(180deg) scale(0); opacity: 0; }
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .card-back {
+            background: linear-gradient(145deg, #e94560, #c23a51);
+            border: 3px solid #fff;
+        }
+
+        .card-back::before {
+            content: "?";
+            color: #fff;
+            font-size: 3rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .card-front {
+            background: linear-gradient(145deg, #fff, #f0f0f0);
+            transform: rotateY(180deg);
+            border: 3px solid #e94560;
+        }
+
+        .btn {
+            margin-top: 25px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: linear-gradient(145deg, #e94560, #c23a51);
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.6);
+        }
+
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        .message h2 {
+            color: #e94560;
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .message p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            z-index: 99;
+        }
+
+        @media (max-width: 500px) {
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
+            }
+            
+            .card {
+                width: 70px;
+                height: 100px;
+            }
+            
+            .card-face {
+                font-size: 2rem;
+            }
+            
+            .card-back::before {
+                font-size: 2rem;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .game-info {
+                gap: 15px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎴 เกมจับคู่ไพ่</h1>
+    
+    <div class="game-info">
+        <span>🎯 คู่ที่จับได้: <span id="matches">0</span>/8</span>
+        <span>🔄 จำนวนครั้ง: <span id="moves">0</span></span>
+    </div>
+    
+    <div class="game-board" id="gameBoard"></div>
+    
+    <button class="btn" onclick="initGame()">🔄 เริ่มเกมใหม่</button>
+    
+    <div class="overlay" id="overlay"></div>
+    <div class="message" id="message">
+        <h2>🎉 ยินดีด้วย!</h2>
+        <p>คุณจับคู่ไพ่สำเร็จทั้งหมดแล้ว!</p>
+        <p>จำนวนครั้งที่ใช้: <span id="finalMoves">0</span> ครั้ง</p>
+        <button class="btn" onclick="closeMessage(); initGame();">เล่นอีกครั้ง</button>
+    </div>
+
+    <script>
+        // รูปภาพบนไพ่ (Emoji)
+        const cardSymbols = ['🐶', '🐱', '🐼', '🦊', '🦁', '🐸', '🦋', '🌸'];
+        
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let isLocked = false;
+
+        // สร้างการ์ดทั้งหมด
+        function createCards() {
+            // สร้างคู่ไพ่
+            const cardPairs = [...cardSymbols, ...cardSymbols];
+            
+            // สับไพ่
+            for (let i = cardPairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cardPairs[i], cardPairs[j]] = [cardPairs[j], cardPairs[i]];
+            }
+            
+            return cardPairs;
+        }
+
+        // แสดงกระดานเกม
+        function renderBoard() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            cards.forEach((symbol, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.symbol = symbol;
+                
+                card.innerHTML = `
+                    <div class="card-face card-back"></div>
+                    <div class="card-face card-front">${symbol}</div>
+                `;
+                
+                card.addEventListener('click', () => flipCard(card));
+                gameBoard.appendChild(card);
+            });
+        }
+
+        // พลิกไพ่
+        function flipCard(card) {
+            // ไม่ทำอะไรถ้า:
+            // - กำลังประมวลผล
+            // - ไพ่ถูกเปิดแล้ว
+            // - เปิดไพ่สองใบแล้ว
+            if (isLocked || card.classList.contains('flipped') || 
+                card.classList.contains('matched') || flippedCards.length >= 2) {
+                return;
+            }
+            
+            // พลิกไพ่
+            card.classList.add('flipped');
+            flippedCards.push(card);
+            
+            // ถ้าเปิดไพ่ครบสองใบ
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                checkMatch();
+            }
+        }
+
+        // ตรวจสอบว่าไพ่ตรงกันหรือไม่
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.symbol === card2.dataset.symbol;
+            
+            if (isMatch) {
+                // ไพ่ตรงกัน
+                matchedPairs++;
+                document.getElementById('matches').textContent = matchedPairs;
+                
+                setTimeout(() => {
+                    card1.classList.add('matched');
+                    card2.classList.add('matched');
+                    flippedCards = [];
+                    
+                    // ตรวจสอบว่าชนะหรือยัง
+                    if (matchedPairs === cardSymbols.length) {
+                        setTimeout(showWinMessage, 500);
+                    }
+                }, 500);
+            } else {
+                // ไพ่ไม่ตรงกัน
+                isLocked = true;
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                    isLocked = false;
+                }, 1000);
+            }
+        }
+
+        // แสดงข้อความชนะ
+        function showWinMessage() {
+            document.getElementById('finalMoves').textContent = moves;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('message').style.display = 'block';
+        }
+
+        // ปิดข้อความ
+        function closeMessage() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('message').style.display = 'none';
+        }
+
+        // เริ่มเกมใหม่
+        function initGame() {
+            cards = createCards();
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            isLocked = false;
+            
+            document.getElementById('matches').textContent = '0';
+            document.getElementById('moves').textContent = '0';
+            
+            renderBoard();
+        }
+
+        // เริ่มเกมเมื่อโหลดหน้า
+        initGame();
+    </script>
+</body>
+</html>
